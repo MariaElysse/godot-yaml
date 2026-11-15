@@ -1,5 +1,9 @@
 # Godot YAML Changelog
 
+## Unreleased
+
+- Added Web (wasm32) builds: `scons platform=web target=template_release` now produces a `.wasm` side module, and prebuilt debug and release web binaries are shipped in the release archives
+
 ## Version 2.2.0
 
 - Updated GDSchema to version 2.0.0, with JSON schema draft 2020-12 validation spec

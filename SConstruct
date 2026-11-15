@@ -23,6 +23,8 @@ def get_library_name(env):
         return f'libgdyaml.windows.{debug_or_release}.{arch}.dll'
     elif platform in ['linux', 'android']:
         return f'libgdyaml.{platform}.{debug_or_release}.{arch}.so'
+    elif platform == 'web':
+        return f'libgdyaml.web.{debug_or_release}.{arch}.wasm'
     elif platform == 'macos':
         return f'libgdyaml.{platform}.{debug_or_release}.dylib'
     elif platform == 'ios':
@@ -67,8 +69,16 @@ def setup_build_env(base_env):
     else:
         if 'CXXFLAGS' in env and isinstance(env['CXXFLAGS'], list):
             env['CXXFLAGS'] = [f for f in env['CXXFLAGS'] if f != '-fno-exceptions']
-        env.Append(CXXFLAGS=['-fexceptions'])
-        env.Append(CCFLAGS=['-fexceptions'])
+
+        if platform == 'web':
+            # -fwasm-exceptions alone does not switch exceptions on, it only picks the
+            # personality (the Wasm EH scheme Godot's own web templates are built with).
+            # Without -fexceptions in front of it every try/throw in our sources fails.
+            env.Append(CXXFLAGS=['-fexceptions', '-fwasm-exceptions'])
+            env.Append(LINKFLAGS=['-fexceptions', '-fwasm-exceptions'])
+        else:
+            env.Append(CXXFLAGS=['-fexceptions'])
+            env.Append(CCFLAGS=['-fexceptions'])
 
         if platform == 'macos':
             env.Append(CCFLAGS=['-mmacosx-version-min=10.15'])
@@ -174,6 +184,21 @@ def build_rapidyaml(env, variant_dir):
             '-DANDROID_STL=c++_shared',
             '-DCMAKE_SYSTEM_NAME=Android'
         ])
+
+    # Emscripten configuration (Godot web target)
+    elif platform == 'web':
+        # The library is linked into a wasm side module, so its objects have to be
+        # produced by the same emscripten toolchain and codegen settings as our own.
+        emcmake = shutil.which('emcmake')
+        if not emcmake:
+            raise ValueError("emcmake must be on PATH for web builds (install emsdk and run 'emsdk activate', or install emscripten)")
+
+        cmake_command.insert(0, emcmake)
+
+        em_cxx_flags = ['-fexceptions', '-fwasm-exceptions', '-sSIDE_MODULE=1']
+        if env.get('threads', True):
+            em_cxx_flags.append('-sUSE_PTHREADS=1')
+        cmake_command.append(f"-DCMAKE_CXX_FLAGS={' '.join(em_cxx_flags)}")
     else:
         cmake_command.append('-DCMAKE_CXX_FLAGS=-fexceptions')
 

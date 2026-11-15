@@ -37,6 +37,8 @@ See [the full changelog](./CHANGELOG.md) for more details.
   - macOS: (Universal)
     -  **Note**: Some macOS configurations (particularly newer versions with stricter Gatekeeper policies) may prevent loading of GDExtensions generally, not just this plugin. If the extension fails to load, try building from source or test with other GDExtensions to determine if this is a system-wide issue.
   - Android (x86 64-bit, ARM 64-bit)
+  - Web (wasm32)
+    -  **Note**: Exporting for web additionally requires the GDExtension `.wasm` to be included in the export preset, and the browser must serve the page with the cross-origin-isolation headers when thread support is enabled.
 
 ## Basic Usage
 

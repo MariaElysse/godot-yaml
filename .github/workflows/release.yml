@@ -102,6 +102,19 @@ jobs:
           name: gdyaml-android-template_release-x86_64
           path: ${{ env.ADDON_PATH }}/bin/
 
+      # Web artifacts
+      - name: Download Web Debug artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: gdyaml-web-template_debug-wasm32
+          path: ${{ env.ADDON_PATH }}/bin/
+
+      - name: Download Web Release artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: gdyaml-web-template_release-wasm32
+          path: ${{ env.ADDON_PATH }}/bin/
+
       - name: List downloaded files
         run: |
           echo "Contents of bin directory:"
@@ -142,6 +155,7 @@ jobs:
             - Linux (x86_64): Debug & Release
             - macOS (Universal): Debug & Release
             - Android (arm64, x86_64): Debug & Release
+            - Web (wasm32): Debug & Release
 
             ### ⚠️ macOS Users
             Prebuilt binaries are provided for macOS, but some macOS configurations (particularly on Apple Silicon with recent OS versions) may have security policies that prevent loading *any* unsigned GDExtensions. If you encounter loading errors:
