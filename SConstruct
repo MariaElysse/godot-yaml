@@ -4,8 +4,28 @@ import subprocess
 import shutil
 import glob
 
-# Use cache for faster build times
-cache_dir = os.path.abspath('build/scons_cache')
+# Use cache for faster build times.
+#
+# The cache is keyed by the build signature, which does not cover the headers of the
+# bundled dependencies. A stale entry would link objects that were compiled against a
+# different version of godot-cpp into the extension, which crashes on startup, so the
+# cache directory is keyed by the revisions of the dependencies as well.
+def dependency_revision(path):
+    try:
+        return subprocess.check_output(
+            ['git', '-C', path, 'rev-parse', 'HEAD'],
+            stderr=subprocess.DEVNULL,
+        ).decode().strip()[:12]
+    except (OSError, subprocess.CalledProcessError):
+        return 'unknown'
+
+cache_dir = os.path.abspath(os.path.join(
+    'build',
+    'scons_cache',
+    dependency_revision('ext/godot-cpp'),
+    dependency_revision('ext/rapidyaml'),
+    dependency_revision('ext/gdschema'),
+))
 if not os.path.exists(cache_dir):
     os.makedirs(cache_dir, exist_ok=True)
 os.environ['SCONS_CACHE'] = cache_dir
@@ -16,9 +36,11 @@ if 'api_version' not in ARGUMENTS:
     ARGUMENTS['api_version'] = '4.7'
 
 # The variant converters throw and catch C++ exceptions, so neither godot-cpp nor this
-# extension may be compiled with -fno-exceptions.
+# extension may be compiled with -fno-exceptions. The web target is the exception: Godot's
+# web runtime is built with exception handling disabled and provides no __cpp_exception
+# tag, so a web side module has to be built without C++ exceptions.
 if 'disable_exceptions' not in ARGUMENTS:
-    ARGUMENTS['disable_exceptions'] = 'no'
+    ARGUMENTS['disable_exceptions'] = 'yes' if ARGUMENTS.get('platform') == 'web' else 'no'
 
 base_env = SConscript('ext/godot-cpp/SConstruct')
 
@@ -78,11 +100,20 @@ def setup_build_env(base_env):
     # ========== UNIX-LIKE ==========
     else:
         if platform == 'web':
-            # -fwasm-exceptions alone does not switch exceptions on, it only picks the
-            # personality (the Wasm EH scheme Godot's own web templates are built with).
-            # Without -fexceptions in front of it every try/throw in our sources fails.
-            env.Append(CXXFLAGS=['-fexceptions', '-fwasm-exceptions'])
-            env.Append(LINKFLAGS=['-fexceptions', '-fwasm-exceptions'])
+            # Godot's web runtime is built with exception handling disabled: its main
+            # module exports no __cpp_exception tag, and its JS runtime only provides
+            # aborting stubs for the JS exception helpers. A side module built with
+            # -fwasm-exceptions therefore fails to instantiate ("import object field
+            # '__cpp_exception' is not a Tag"), and emscripten rejects JS-based
+            # exceptions together with the wasm longjmp mode godot-cpp turns on for
+            # web builds. Error propagation on web therefore goes through wasm
+            # setjmp/longjmp, which the engine supports natively.
+            #
+            # The memory of a side module has to be shared or unshared in the same way
+            # as the memory of the engine that loads it, so the thread support of the
+            # build has to match the thread support of the web export.
+            env.Append(CXXFLAGS=['-fno-exceptions'])
+            env.Append(LINKFLAGS=['-fno-exceptions'])
         else:
             env.Append(CXXFLAGS=['-fexceptions'])
             env.Append(CCFLAGS=['-fexceptions'])
@@ -153,7 +184,6 @@ def build_rapidyaml(env, variant_dir):
         f'-DCMAKE_BUILD_TYPE={cmake_build_type}',
         '-DRYML_BUILD_TESTS=OFF',
         '-DRYML_BUILD_TOOLS=OFF',
-        '-DRYML_DEFAULT_CALLBACK_USES_EXCEPTIONS=ON',
         '-DCMAKE_POSITION_INDEPENDENT_CODE=ON'
     ]
 
@@ -202,12 +232,18 @@ def build_rapidyaml(env, variant_dir):
 
         cmake_command.insert(0, emcmake)
 
-        em_cxx_flags = ['-fexceptions', '-fwasm-exceptions', '-sSIDE_MODULE=1']
+        # The exception scheme has to match the one the engine's web runtime can
+        # link against (see setup_build_env): no C++ exceptions at all.
+        em_cxx_flags = ['-fno-exceptions', '-sSIDE_MODULE=1']
         if env.get('threads', True):
             em_cxx_flags.append('-sUSE_PTHREADS=1')
         cmake_command.append(f"-DCMAKE_CXX_FLAGS={' '.join(em_cxx_flags)}")
+        # RapidYAML's default error callback throws, which is not available in a
+        # build without exceptions. We always install our own callbacks.
+        cmake_command.append('-DRYML_DEFAULT_CALLBACK_USES_EXCEPTIONS=OFF')
     else:
         cmake_command.append('-DCMAKE_CXX_FLAGS=-fexceptions')
+        cmake_command.append('-DRYML_DEFAULT_CALLBACK_USES_EXCEPTIONS=ON')
 
     # Prepare environment for subprocess to include SCons-detected paths/compilers
     sub_env = os.environ.copy()
