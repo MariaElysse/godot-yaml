@@ -5,6 +5,7 @@
 #include <godot_cpp/classes/resource.hpp>
 #include <godot_cpp/classes/resource_loader.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
+#include "../error_handling.hpp"
 
 using namespace godot;
 
@@ -24,12 +25,12 @@ YAMLParserContext::YAMLParserContext(const ryml::Parser *p_ryml_parser, const Re
 
 Ref<YAMLStyle> YAMLParserContext::current_style() const {
 	if (style_stack.empty()) {
-		throw YAMLException("Style stack is empty!");
+		YAML_THROW(YAMLException("Style stack is empty!"));
 	}
 
 	Ref<YAMLStyle> current_style = style_stack.top();
 	if (!current_style.is_valid()) {
-		throw YAMLException("Current style is not valid!");
+		YAML_THROW(YAMLException("Current style is not valid!"));
 	}
 
 	return current_style;
@@ -42,7 +43,7 @@ Ref<YAMLStyle> YAMLParserContext::push_style(const String &key) {
 
 	Ref<YAMLStyle> parent = style_stack.top();
 	if (!parent.is_valid()) {
-		throw new YAMLException("Not a valid YAMLStyle");
+		YAML_THROW(YAMLException("Not a valid YAMLStyle"));
 	}
 
 	Ref<YAMLStyle> child;

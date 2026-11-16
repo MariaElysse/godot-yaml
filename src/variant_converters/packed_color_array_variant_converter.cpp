@@ -2,6 +2,7 @@
 #include "../exception.hpp"
 #include "../util/ryml_flags.hpp"
 #include "variant_converter_factory.hpp"
+#include "../error_handling.hpp"
 
 using namespace godot;
 
@@ -47,7 +48,7 @@ void YAMLPackedColorArrayVariantConverter::encode(ryml::NodeRef &node, const Var
 
 Variant YAMLPackedColorArrayVariantConverter::decode(const ryml::ConstNodeRef &node, YAMLParserContext *context) const {
 	if (!node.is_seq()) {
-		throw create_invalid_format_exception(node);
+		YAML_THROW(create_invalid_format_exception(node));
 	}
 
 	PackedColorArray array;
@@ -65,7 +66,7 @@ Variant YAMLPackedColorArrayVariantConverter::decode(const ryml::ConstNodeRef &n
 	}
 
 	for (size_t i = 0; i < size; ++i) {
-		try {
+		YAML_TRY {
 			if (detect_style) {
 				context->push_style(String::num_uint64(i));
 			}
@@ -81,12 +82,12 @@ Variant YAMLPackedColorArrayVariantConverter::decode(const ryml::ConstNodeRef &n
 
 				context->pop_style();
 			}
-		} catch (const YAMLException &e) {
+		} YAML_CATCH_VAR(const YAMLException &, e) {
 			// NOTE: Cast size_t to int64_t for ARM64 macOS Variant compatibility
-			throw YAMLException(vformat("Failed to decode PackedColorArray value at index %d: %s", static_cast<int64_t>(i), e.what()), e.get_location());
-		} catch (const std::exception &e) {
+			YAML_THROW(YAMLException(vformat("Failed to decode PackedColorArray value at index %d: %s", static_cast<int64_t>(i), e.what()), e.get_location()));
+		} YAML_CATCH_VAR(const std::exception &, e_std) {
 			// NOTE: Cast size_t to int64_t for ARM64 macOS Variant compatibility
-			throw YAMLException(vformat("Failed to decode PackedColorArray value at index %d: %s", static_cast<int64_t>(i), e.what()), node[i].location(*context->get_ryml_parser()));
+			YAML_THROW(YAMLException(vformat("Failed to decode PackedColorArray value at index %d: %s", static_cast<int64_t>(i), e_std.what()), node[i].location(*context->get_ryml_parser())));
 		}
 	}
 

@@ -7,5 +7,5 @@
 	url = https://github.com/biojppm/rapidyaml.git
 [submodule "ext/gdschema"]
 	path = ext/gdschema
-	url = https://github.com/fimbul-works/gdschema
-	branch = main
+	url = https://github.com/MariaElysse/gdschema.git
+	branch = godot-cpp-10-compat

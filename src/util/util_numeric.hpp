@@ -8,6 +8,7 @@
  */
 #pragma once
 
+#include "../error_handling.hpp"
 #include "../exception.hpp"
 #include "../style/style.hpp"
 
@@ -86,10 +87,10 @@ T string_to_int(const ryml::csubstr &value, YAMLStyle::IntegerFormat *format = n
 	if (ec == std::errc()) {
 		return is_negative ? -result : result;
 	} else if (ec == std::errc::result_out_of_range) {
-		throw YAMLException("Integer value out of range");
+		YAML_THROW(YAMLException("Integer value out of range"));
 	}
 
-	throw YAMLException("Invalid integer format");
+	YAML_THROW(YAMLException("Invalid integer format"));
 }
 
 /**
@@ -190,7 +191,7 @@ T string_to_float(const ryml::csubstr &value, YAMLStyle::FloatFormat *format = n
 
 	auto span = value.first_real_span();
 	if (span.empty()) {
-		throw YAMLException("Invalid float format");
+		YAML_THROW(YAMLException("Invalid float format"));
 	}
 
 	T result;
@@ -209,13 +210,13 @@ T string_to_float(const ryml::csubstr &value, YAMLStyle::FloatFormat *format = n
 
 	// Check if conversion was successful
 	if (end_ptr == str.c_str()) {
-		throw YAMLException("Invalid float format");
+		YAML_THROW(YAMLException("Invalid float format"));
 	}
 
 	// Check for out of range (infinity values)
 	if (result == std::numeric_limits<T>::infinity() || result == -std::numeric_limits<T>::infinity()) {
 		if (str != ".inf" && str != "-.inf" && str != "+.inf") {
-			throw YAMLException("Float value out of range");
+			YAML_THROW(YAMLException("Float value out of range"));
 		}
 	}
 

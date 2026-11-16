@@ -63,7 +63,7 @@ Alternatively you can build the binaries yourself. For the [latest versions of m
   - **Linux/macOS**: GCC 9+ or Clang 10+
 - **SCons** build system (`pip install scons`)
 - **Android**: JDK version 20, NDK version 23.2.8568313, and Ninja
-- **Web**: Emscripten SDK, version **4.0.11** (the release the official Godot 4.7 web templates are built with), activated so that `emcc`, `em++` and `emcmake` are on `PATH`:
+- **Web**: Emscripten SDK, version **4.0.11** (the same toolchain generation as the official Godot 4.7 web templates, which are built with 4.0.20), activated so that `emcc`, `em++` and `emcmake` are on `PATH`:
   ```bash
   git clone https://github.com/emscripten-core/emsdk.git
   cd emsdk && ./emsdk install 4.0.11 && ./emsdk activate 4.0.11

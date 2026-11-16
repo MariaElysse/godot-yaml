@@ -5,6 +5,7 @@
 
 #include <godot_cpp/classes/marshalls.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
+#include "../error_handling.hpp"
 
 using namespace godot;
 
@@ -30,13 +31,13 @@ Variant YAMLPackedByteArrayVariantConverter::decode(const ryml::ConstNodeRef &no
 	}
 
 	if (!node.has_val()) {
-		throw create_invalid_format_exception(node);
+		YAML_THROW(create_invalid_format_exception(node));
 	}
 
-	try {
+	YAML_TRY {
 		return Marshalls::get_singleton()->base64_to_raw(cleanup(node.val(), node, context));
-	} catch (const std::exception &e) {
-		throw create_decode_error_exception(e.what(), node);
+	} YAML_CATCH_VAR(const std::exception &, e) {
+		YAML_THROW(create_decode_error_exception(e.what(), node));
 	}
 }
 
@@ -48,7 +49,7 @@ String YAMLPackedByteArrayVariantConverter::cleanup(const ryml::csubstr &input, 
 		char c = raw[i];
 		if (!is_whitespace_char(c)) {
 			if (!is_base64_char(c)) {
-				throw create_exception(vformat("Invalid character '%c' in PackedByteArray", c), node);
+				YAML_THROW(create_exception(vformat("Invalid character '%c' in PackedByteArray", c), node));
 			}
 			cleaned += c;
 		}

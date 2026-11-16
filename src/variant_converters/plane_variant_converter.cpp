@@ -3,6 +3,7 @@
 #include "../util/ryml_flags.hpp"
 #include "../util/util_numeric.hpp"
 #include "variant_converter_factory.hpp"
+#include "../error_handling.hpp"
 
 using namespace godot;
 
@@ -34,7 +35,7 @@ void YAMLPlaneVariantConverter::encode(ryml::NodeRef &node, const Variant &v, co
 }
 
 Variant YAMLPlaneVariantConverter::decode(const ryml::ConstNodeRef &node, YAMLParserContext *context) const {
-	try {
+	YAML_TRY {
 		if (node.is_map()) {
 			return decode_from_map(node, context);
 		}
@@ -43,16 +44,18 @@ Variant YAMLPlaneVariantConverter::decode(const ryml::ConstNodeRef &node, YAMLPa
 			return decode_from_sequence(node, context);
 		}
 
-		throw create_invalid_format_exception(node);
-	} catch (const YAMLException &e) {
-		throw YAMLException(vformat("Failed to decode Plane: %s", e.what()), e.get_location());
-	} catch (const std::exception &e) {
-		throw create_decode_error_exception(e.what(), node);
+		YAML_THROW(create_invalid_format_exception(node));
+	} YAML_CATCH_VAR(const YAMLException &, e) {
+		YAML_THROW(YAMLException(vformat("Failed to decode Plane: %s", e.what()), e.get_location()));
+	} YAML_CATCH_VAR(const std::exception &, e_std) {
+		YAML_THROW(create_decode_error_exception(e_std.what(), node));
 	}
 }
 
 Variant YAMLPlaneVariantConverter::decode_from_map(const ryml::ConstNodeRef &node, YAMLParserContext *context) const {
-	check_required_fields(node, { "normal", "d" });
+	if (!check_required_fields(node, { "normal", "d" })) {
+		return YAMLErrorChannel::fallback();
+	}
 
 	const bool detect_style = context->detect_style;
 
@@ -84,7 +87,7 @@ Variant YAMLPlaneVariantConverter::decode_from_map(const ryml::ConstNodeRef &nod
 
 Variant YAMLPlaneVariantConverter::decode_from_sequence(const ryml::ConstNodeRef &node, YAMLParserContext *context) const {
 	if (node.num_children() != 2) {
-		throw create_invalid_sequence_length_exception(2, node);
+		YAML_THROW(create_invalid_sequence_length_exception(2, node));
 	}
 
 	const bool detect_style = context->detect_style;

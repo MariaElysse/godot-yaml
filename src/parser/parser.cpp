@@ -8,6 +8,7 @@
 #include <godot_cpp/classes/resource.hpp>
 #include <godot_cpp/classes/resource_loader.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
+#include "../error_handling.hpp"
 
 using namespace godot;
 
@@ -67,7 +68,7 @@ void YAML::Parser::error_callback(ryml::csubstr msg, const ryml::ErrorDataParse 
 	}
 
 	// Fallback if parser is null
-	throw YAMLException(from_ryml_str(error_msg), loc);
+	YAML_THROW_VOID(YAMLException(from_ryml_str(error_msg), loc));
 }
 
 void YAML::Parser::fail(const String &error_msg, ryml::Location loc) const {
@@ -76,7 +77,8 @@ void YAML::Parser::fail(const String &error_msg, ryml::Location loc) const {
 }
 
 Ref<YAMLResult> YAML::Parser::parse(const String &input, const YAMLSecurity::View &p_security_view, const bool p_detect_style) {
-	try {
+	YAML_TRY {
+		YAMLErrorChannel::clear();
 		current_result = YAMLResult::success(Variant());
 		security_view = p_security_view;
 		style = YAML::create_style();
@@ -127,18 +129,24 @@ Ref<YAMLResult> YAML::Parser::parse(const String &input, const YAMLSecurity::Vie
 
 		context.reset();
 
+		if (YAMLErrorChannel::has_error()) {
+			// An error that a converter reported in a build without exception support.
+			fail(String(YAMLErrorChannel::message().c_str()), YAMLErrorChannel::location());
+		}
+
 		return current_result;
-	} catch (const YAMLException &e) {
+	} YAML_CATCH_VAR(const YAMLException &, e) {
 		return YAMLResult::error(e.what(), e.get_line(), e.get_column());
-	} catch (const std::exception &e) {
-		return YAMLResult::error(e.what());
-	} catch (...) {
+	} YAML_CATCH_VAR(const std::exception &, e_std) {
+		return YAMLResult::error(e_std.what());
+	} YAML_CATCH_ANY {
 		return YAMLResult::error("Unexpected error during parsing");
 	}
 }
 
 Ref<YAMLResult> YAML::Parser::parse_and_validate(const String &input, const Variant &schema_param, const YAMLSecurity::View &p_security_view, const bool p_detect_style) {
-	try {
+	YAML_TRY {
+		YAMLErrorChannel::clear();
 		current_result = YAMLResult::success(Variant());
 		security_view = p_security_view;
 		style = YAML::create_style();
@@ -170,6 +178,12 @@ Ref<YAMLResult> YAML::Parser::parse_and_validate(const String &input, const Vari
 			return current_result;
 		}
 
+		if (YAMLErrorChannel::has_error()) {
+			// An error that a converter reported in a build without exception support.
+			fail(String(YAMLErrorChannel::message().c_str()), YAMLErrorChannel::location());
+			return current_result;
+		}
+
 		// Build validation result
 		Ref<SchemaValidationResult> validation_result;
 		if (context->has_validation_errors()) {
@@ -183,10 +197,10 @@ Ref<YAMLResult> YAML::Parser::parse_and_validate(const String &input, const Vari
 
 		return YAMLResult::success(data, style, validation_result);
 
-	} catch (const YAMLException &e) {
+	} YAML_CATCH_VAR(const YAMLException &, e) {
 		return YAMLResult::error(e.what(), e.get_line(), e.get_column());
-	} catch (const std::exception &e) {
-		return YAMLResult::error(e.what());
+	} YAML_CATCH_VAR(const std::exception &, e_std) {
+		return YAMLResult::error(e_std.what());
 	}
 }
 
@@ -201,6 +215,12 @@ Array YAML::Parser::parse_locations_for_editor(const String &input) {
 
 Variant YAML::Parser::process_node(const ryml::ConstNodeRef &node) const {
 	if (current_result->has_error()) {
+		return Variant();
+	}
+
+	if (YAMLErrorChannel::has_error()) {
+		// An error that a converter reported in a build without exception support.
+		fail(String(YAMLErrorChannel::message().c_str()), YAMLErrorChannel::location());
 		return Variant();
 	}
 
@@ -610,46 +630,64 @@ std::optional<Variant> YAML::Parser::try_parse_numeric_value(const String &str_v
 	// Check for explicit numeric formats (hex, binary, octal)
 	// At minimum "0x", "0b", or "0o" + 1 digit
 	if (str_val.length() >= 3 && (is_valid_hex(str_val) || is_valid_binary(str_val) || is_valid_octal(str_val))) {
-		try {
+		YAML_TRY {
 			YAMLStyle::IntegerFormat int_format = YAMLStyle::INT_ANY;
 			auto int_val = string_to_int<int64_t>(val, detect_style ? &int_format : nullptr);
+			if (YAMLErrorChannel::has_error()) {
+				// The conversion failed without an exception (build without
+				// exception support), so the value is treated as a string.
+				YAMLErrorChannel::clear();
+				return std::nullopt;
+			}
 
 			if (detect_style) {
 				context->current_style()->set_integer_format(int_format);
 			}
 
 			return int_val;
-		} catch (const std::exception &e) {
+		} YAML_CATCH_VAR(const std::exception &, e_std) {
 			return std::nullopt;
 		}
 	}
 
 	if (str_val.contains(".") && is_valid_float(str_val)) {
-		try {
+		YAML_TRY {
 			YAMLStyle::FloatFormat float_format = YAMLStyle::FLOAT_ANY;
 			auto float_val = string_to_float<double>(val, detect_style ? &float_format : nullptr);
+			if (YAMLErrorChannel::has_error()) {
+				// The conversion failed without an exception (build without
+				// exception support), so the value is treated as a string.
+				YAMLErrorChannel::clear();
+				return std::nullopt;
+			}
 
 			if (detect_style) {
 				context->current_style()->set_float_format(float_format);
 			}
 
 			return float_val;
-		} catch (const std::exception &e) {
+		} YAML_CATCH_VAR(const std::exception &, e_std) {
 			return std::nullopt;
 		}
 	}
 
 	if (is_valid_decimal_int(str_val)) {
-		try {
+		YAML_TRY {
 			YAMLStyle::IntegerFormat int_format = YAMLStyle::INT_DECIMAL;
 			auto int_val = string_to_int<int64_t>(val, detect_style ? &int_format : nullptr);
+			if (YAMLErrorChannel::has_error()) {
+				// The conversion failed without an exception (build without
+				// exception support), so the value is treated as a string.
+				YAMLErrorChannel::clear();
+				return std::nullopt;
+			}
 
 			if (detect_style) {
 				context->current_style()->set_integer_format(int_format);
 			}
 
 			return int_val;
-		} catch (const std::exception &e) {
+		} YAML_CATCH_VAR(const std::exception &, e_std) {
 			return std::nullopt;
 		}
 	}
@@ -676,12 +714,12 @@ std::optional<Variant> YAML::Parser::try_parse_tagged_value(const ryml::ConstNod
 
 	YAMLVariantConverter *converter = get_converter_for_tag(tag);
 	if (converter) {
-		try {
+		YAML_TRY {
 			return converter->decode(node, context.get());
-		} catch (const YAMLException &e) {
+		} YAML_CATCH_VAR(const YAMLException &, e) {
 			fail(e.what(), e.get_location());
-		} catch (const std::exception &e) {
-			fail(e.what(), node.location(*ryml_parser));
+		} YAML_CATCH_VAR(const std::exception &, e_std) {
+			fail(e_std.what(), node.location(*ryml_parser));
 		}
 	}
 

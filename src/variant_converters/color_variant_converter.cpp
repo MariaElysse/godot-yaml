@@ -2,6 +2,7 @@
 #include "../exception.hpp"
 #include "../util/ryml_flags.hpp"
 #include "../util/util_numeric.hpp"
+#include "../error_handling.hpp"
 
 using namespace godot;
 
@@ -44,7 +45,7 @@ void YAMLColorVariantConverter::encode(ryml::NodeRef &node, const Variant &v, co
 }
 
 Variant YAMLColorVariantConverter::decode(const ryml::ConstNodeRef &node, YAMLParserContext *context) const {
-	try {
+	YAML_TRY {
 		if (node.is_map()) {
 			return decode_map(node, context);
 		}
@@ -57,16 +58,18 @@ Variant YAMLColorVariantConverter::decode(const ryml::ConstNodeRef &node, YAMLPa
 			return decode_string(node);
 		}
 
-		throw create_invalid_format_exception(node);
-	} catch (const YAMLException &) {
-		throw; // Re-throw YAML exceptions
-	} catch (const std::exception &e) {
-		throw create_decode_error_exception(e.what(), node);
+		YAML_THROW(create_invalid_format_exception(node));
+	} YAML_CATCH(const YAMLException &) {
+		YAML_RETHROW; // Re-throw YAML exceptions
+	} YAML_CATCH_VAR(const std::exception &, e) {
+		YAML_THROW(create_decode_error_exception(e.what(), node));
 	}
 }
 
 Variant YAMLColorVariantConverter::decode_map(const ryml::ConstNodeRef &node, YAMLParserContext *context) const {
-	check_required_fields(node, { "r", "g", "b" });
+	if (!check_required_fields(node, { "r", "g", "b" })) {
+		return YAMLErrorChannel::fallback();
+	}
 
 	if (context->detect_style) {
 		Ref<YAMLStyle> style = context->current_style();
@@ -111,7 +114,9 @@ Variant YAMLColorVariantConverter::decode_map(const ryml::ConstNodeRef &node, YA
 		context->pop_style();
 	}
 
-	check_negative(r, g, b, a, node);
+	if (!check_negative(r, g, b, a, node)) {
+		return YAMLErrorChannel::fallback();
+	}
 
 	return Color(r, g, b, a);
 }
@@ -119,7 +124,7 @@ Variant YAMLColorVariantConverter::decode_map(const ryml::ConstNodeRef &node, YA
 Variant YAMLColorVariantConverter::decode_sequence(const ryml::ConstNodeRef &node, YAMLParserContext *context) const {
 	const size_t size = node.num_children();
 	if (size != 3 && size != 4) {
-		throw create_exception("Color array must have 3 or 4 elements (RGB[A])", node);
+		YAML_THROW(create_exception("Color array must have 3 or 4 elements (RGB[A])", node));
 	}
 
 	if (context->detect_style) {
@@ -165,7 +170,9 @@ Variant YAMLColorVariantConverter::decode_sequence(const ryml::ConstNodeRef &nod
 		context->pop_style();
 	}
 
-	check_negative(r, g, b, a, node);
+	if (!check_negative(r, g, b, a, node)) {
+		return YAMLErrorChannel::fallback();
+	}
 
 	return Color(r, g, b, a);
 }
@@ -174,26 +181,28 @@ Variant YAMLColorVariantConverter::decode_string(const ryml::ConstNodeRef &node)
 	String str = from_ryml_str(node.val());
 
 	if (!Color::html_is_valid(str) && Color::find_named_color(str) == -1) {
-		throw create_exception(vformat("Invalid Color string: %s", str), node);
+		YAML_THROW(create_exception(vformat("Invalid Color string: %s", str), node));
 	}
 
 	return Color::from_string(str, Color(1.0f, 1.0f, 1.0f, 1.0f));
 }
 
-void YAMLColorVariantConverter::check_negative(real_t r, real_t g, real_t b, real_t a, const ryml::ConstNodeRef &node) const {
+bool YAMLColorVariantConverter::check_negative(real_t r, real_t g, real_t b, real_t a, const ryml::ConstNodeRef &node) const {
 	if (r < 0.0f) {
-		throw create_exception("Negative Color component value (r)", node);
+		YAML_THROW(create_exception("Negative Color component value (r)", node));
 	}
 
 	if (g < 0.0f) {
-		throw create_exception("Negative Color component value (g)", node);
+		YAML_THROW(create_exception("Negative Color component value (g)", node));
 	}
 
 	if (b < 0.0f) {
-		throw create_exception("Negative Color component value (b)", node);
+		YAML_THROW(create_exception("Negative Color component value (b)", node));
 	}
 
 	if (a < 0.0f) {
-		throw create_exception("Negative Color component value (a)", node);
+		YAML_THROW(create_exception("Negative Color component value (a)", node));
 	}
+
+	return true;
 }

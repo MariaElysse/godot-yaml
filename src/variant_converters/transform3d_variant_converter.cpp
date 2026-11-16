@@ -2,6 +2,7 @@
 #include "../exception.hpp"
 #include "../util/ryml_flags.hpp"
 #include "variant_converter_factory.hpp"
+#include "../error_handling.hpp"
 
 using namespace godot;
 
@@ -36,7 +37,7 @@ void YAMLTransform3DVariantConverter::encode(ryml::NodeRef &node, const Variant 
 }
 
 Variant YAMLTransform3DVariantConverter::decode(const ryml::ConstNodeRef &node, YAMLParserContext *context) const {
-	try {
+	YAML_TRY {
 		if (node.is_map()) {
 			return decode_from_map(node, context);
 		}
@@ -45,16 +46,18 @@ Variant YAMLTransform3DVariantConverter::decode(const ryml::ConstNodeRef &node, 
 			return decode_from_sequence(node, context);
 		}
 
-		throw create_invalid_format_exception(node);
-	} catch (const YAMLException &e) {
-		throw YAMLException(vformat("Failed to decode Transform3D: %s", e.what()), e.get_location());
-	} catch (const std::exception &e) {
-		throw create_decode_error_exception(e.what(), node);
+		YAML_THROW(create_invalid_format_exception(node));
+	} YAML_CATCH_VAR(const YAMLException &, e) {
+		YAML_THROW(YAMLException(vformat("Failed to decode Transform3D: %s", e.what()), e.get_location()));
+	} YAML_CATCH_VAR(const std::exception &, e_std) {
+		YAML_THROW(create_decode_error_exception(e_std.what(), node));
 	}
 }
 
 Transform3D YAMLTransform3DVariantConverter::decode_from_map(const ryml::ConstNodeRef &node, YAMLParserContext *context) const {
-	check_required_fields(node, { "basis", "origin" });
+	if (!check_required_fields(node, { "basis", "origin" })) {
+		return YAMLErrorChannel::fallback();
+	}
 
 	const bool detect_style = context->detect_style;
 
@@ -84,7 +87,7 @@ Transform3D YAMLTransform3DVariantConverter::decode_from_map(const ryml::ConstNo
 
 Transform3D YAMLTransform3DVariantConverter::decode_from_sequence(const ryml::ConstNodeRef &node, YAMLParserContext *context) const {
 	if (node.num_children() != 4) {
-		throw create_invalid_sequence_length_exception(4, node);
+		YAML_THROW(create_invalid_sequence_length_exception(4, node));
 	}
 
 	const bool detect_style = context->detect_style;

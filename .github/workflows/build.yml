@@ -180,10 +180,11 @@ jobs:
         if: matrix.platform == 'web'
         uses: mymindstorm/setup-emsdk@v14
         with:
-          # The emscripten version the official Godot 4.7 web templates are built with
-          # (see EM_VERSION in godotengine/godot's .github/workflows/web_builds.yml).
-          # A side module must be produced by the same toolchain generation as the engine
-          # that dlopen()s it, so don't drift this without bumping godot-cpp too.
+          # The emscripten generation of the official Godot 4.7 web templates. The
+          # 4.7.2 templates are built with emscripten 4.0.20, and a side module has
+          # to be produced by a toolchain of the same generation as the engine that
+          # loads it, because the dylink metadata of the two has to match. The 4.0.x
+          # generation is verified to work against the 4.7.2 templates.
           version: 4.0.11
           no-cache: true
 

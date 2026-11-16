@@ -4,6 +4,7 @@
 #include "variant_converter_factory.hpp"
 
 #include <godot_cpp/variant/utility_functions.hpp>
+#include "../error_handling.hpp"
 
 namespace godot {
 
@@ -36,7 +37,7 @@ void YAMLAABBVariantConverter::encode(ryml::NodeRef &node, const Variant &v, con
 }
 
 Variant YAMLAABBVariantConverter::decode(const ryml::ConstNodeRef &node, YAMLParserContext *context) const {
-	try {
+	YAML_TRY {
 		if (node.is_map()) {
 			return decode_from_map(node, context);
 		}
@@ -45,16 +46,18 @@ Variant YAMLAABBVariantConverter::decode(const ryml::ConstNodeRef &node, YAMLPar
 			return decode_from_sequence(node, context);
 		}
 
-		throw create_invalid_format_exception(node);
-	} catch (const YAMLException &) {
-		throw; // Re-throw YAML exceptions
-	} catch (const std::exception &e) {
-		throw create_decode_error_exception(e.what(), node);
+		YAML_THROW(create_invalid_format_exception(node));
+	} YAML_CATCH(const YAMLException &) {
+		YAML_RETHROW; // Re-throw YAML exceptions
+	} YAML_CATCH_VAR(const std::exception &, e) {
+		YAML_THROW(create_decode_error_exception(e.what(), node));
 	}
 }
 
 Variant YAMLAABBVariantConverter::decode_from_map(const ryml::ConstNodeRef &node, YAMLParserContext *context) const {
-	check_required_fields(node, { "position", "size" });
+	if (!check_required_fields(node, { "position", "size" })) {
+		return YAMLErrorChannel::fallback();
+	}
 
 	const bool detect_style = context->detect_style;
 
@@ -84,7 +87,7 @@ Variant YAMLAABBVariantConverter::decode_from_map(const ryml::ConstNodeRef &node
 
 Variant YAMLAABBVariantConverter::decode_from_sequence(const ryml::ConstNodeRef &node, YAMLParserContext *context) const {
 	if (node.num_children() != 2) {
-		throw create_invalid_sequence_length_exception(2, node);
+		YAML_THROW(create_invalid_sequence_length_exception(2, node));
 	}
 
 	const bool detect_style = context->detect_style;

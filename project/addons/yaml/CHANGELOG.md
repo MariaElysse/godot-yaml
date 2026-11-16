@@ -3,6 +3,8 @@
 ## Unreleased
 
 - Added Web (wasm32) builds: `scons platform=web target=template_release` now produces a `.wasm` side module, and prebuilt debug and release web binaries are shipped in the release archives
+  - The web module is built without C++ exceptions, because Godot's web runtime is built without exception handling as well and cannot link a side module that uses them. Errors are reported through the same results as on the other platforms, but the message of a failed conversion is less specific on web, since it is not wrapped with the context of the conversion that failed
+  - The thread support of the web build has to match the thread support of the web export, because the memory of a side module has to be shared or unshared in the same way as the memory of the engine that loads it. The prebuilt binaries use thread support, which is the default of the Godot web export
 - **BREAKING**: Requires Godot 4.7 or later. The extension is now built against the Godot 4.7 GDExtension API (`compatibility_minimum = "4.7"`), with godot-cpp 10.0.0 and RapidYAML 0.16.0
 
 ## Version 2.2.0

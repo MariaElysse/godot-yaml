@@ -3,6 +3,7 @@
 #include <ryml.hpp>
 
 #include <memory>
+#include "../error_handling.hpp"
 
 using namespace godot;
 
@@ -14,7 +15,7 @@ YAML::SyntaxValidator::SyntaxValidator() {
 }
 
 Ref<YAMLResult> YAML::SyntaxValidator::validate(const String &input) {
-	try {
+	YAML_TRY {
 		current_result = YAMLResult::success(Variant());
 
 		if (setjmp(jmp_env) != 0) {
@@ -24,11 +25,11 @@ Ref<YAMLResult> YAML::SyntaxValidator::validate(const String &input) {
 		ryml::parse_in_arena(ryml_parser.get(), input.utf8().get_data(), &tree);
 
 		return current_result;
-	} catch (const YAMLException &e) {
+	} YAML_CATCH_VAR(const YAMLException &, e) {
 		return YAMLResult::error(e.what(), e.get_line(), e.get_column());
-	} catch (const std::exception &e) {
-		return YAMLResult::error(e.what());
-	} catch (...) {
+	} YAML_CATCH_VAR(const std::exception &, e_std) {
+		return YAMLResult::error(e_std.what());
+	} YAML_CATCH_ANY {
 		return YAMLResult::error("Unexpected error during validation");
 	}
 }
@@ -55,5 +56,5 @@ void YAML::SyntaxValidator::error_callback(ryml::csubstr msg, const ryml::ErrorD
 		std::longjmp(validator->jmp_env, 1);
 	}
 
-	throw YAMLException(from_ryml_str(error_msg), loc);
+	YAML_THROW_VOID(YAMLException(from_ryml_str(error_msg), loc));
 }

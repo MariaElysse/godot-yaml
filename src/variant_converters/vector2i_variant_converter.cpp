@@ -2,6 +2,7 @@
 #include "../exception.hpp"
 #include "../util/ryml_flags.hpp"
 #include "../util/util_numeric.hpp"
+#include "../error_handling.hpp"
 
 using namespace godot;
 
@@ -32,7 +33,7 @@ void YAMLVector2iVariantConverter::encode(ryml::NodeRef &node, const Variant &v,
 }
 
 Variant YAMLVector2iVariantConverter::decode(const ryml::ConstNodeRef &node, YAMLParserContext *context) const {
-	try {
+	YAML_TRY {
 		if (node.is_map()) {
 			return decode_from_map(node, context);
 		}
@@ -41,16 +42,18 @@ Variant YAMLVector2iVariantConverter::decode(const ryml::ConstNodeRef &node, YAM
 			return decode_from_sequence(node, context);
 		}
 
-		throw create_invalid_format_exception(node);
-	} catch (const YAMLException &) {
-		throw; // Re-throw YAML exceptions
-	} catch (const std::exception &e) {
-		throw create_decode_error_exception(e.what(), node);
+		YAML_THROW(create_invalid_format_exception(node));
+	} YAML_CATCH(const YAMLException &) {
+		YAML_RETHROW; // Re-throw YAML exceptions
+	} YAML_CATCH_VAR(const std::exception &, e) {
+		YAML_THROW(create_decode_error_exception(e.what(), node));
 	}
 }
 
 Vector2i YAMLVector2iVariantConverter::decode_from_map(const ryml::ConstNodeRef &node, YAMLParserContext *context) const {
-	check_required_fields(node, { "x", "y" });
+	if (!check_required_fields(node, { "x", "y" })) {
+		return YAMLErrorChannel::fallback();
+	}
 
 	const bool detect_style = context->detect_style;
 
@@ -85,7 +88,7 @@ Vector2i YAMLVector2iVariantConverter::decode_from_map(const ryml::ConstNodeRef 
 
 Vector2i YAMLVector2iVariantConverter::decode_from_sequence(const ryml::ConstNodeRef &node, YAMLParserContext *context) const {
 	if (node.num_children() != 2) {
-		throw create_invalid_sequence_length_exception(2, node);
+		YAML_THROW(create_invalid_sequence_length_exception(2, node));
 	}
 
 	const bool detect_style = context->detect_style;

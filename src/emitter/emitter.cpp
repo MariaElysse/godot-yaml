@@ -9,6 +9,7 @@
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/typed_array.hpp>
 #include <sstream>
+#include "../error_handling.hpp"
 
 using namespace godot;
 
@@ -66,7 +67,7 @@ void YAML::Emitter::handle_error(ryml::csubstr msg, const ryml::Location &loc, v
 	}
 
 	// Fallback
-	throw YAMLException(from_ryml_str(error_msg));
+	YAML_THROW_VOID(YAMLException(from_ryml_str(error_msg)));
 }
 
 ryml::csubstr YAML::Emitter::store_string(const String &str) {
@@ -84,7 +85,7 @@ YAMLVariantConverter *YAML::Emitter::get_converter_for_tag(const String &tag) co
 }
 
 Ref<YAMLResult> YAML::Emitter::emit(const Variant &input, const YAMLStyle::View &style) {
-	try {
+	YAML_TRY {
 		current_result = YAMLResult::success(Variant());
 		depth = 0;
 
@@ -100,11 +101,11 @@ Ref<YAMLResult> YAML::Emitter::emit(const Variant &input, const YAMLStyle::View 
 
 		std::string yaml_str = ryml::emitrs_yaml<std::string>(tree);
 		return YAMLResult::success(String::utf8(yaml_str.c_str(), yaml_str.length()), nullptr);
-	} catch (const YAMLException &e) {
+	} YAML_CATCH_VAR(const YAMLException &, e) {
 		return YAMLResult::error(e.get_godot_message());
-	} catch (const std::exception &e) {
-		return YAMLResult::error(e.what());
-	} catch (...) {
+	} YAML_CATCH_VAR(const std::exception &, e_std) {
+		return YAMLResult::error(e_std.what());
+	} YAML_CATCH_ANY {
 		return YAMLResult::error("Unknown error occurred during stringification");
 	}
 }

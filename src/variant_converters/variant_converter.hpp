@@ -17,6 +17,7 @@
 #include <godot_cpp/classes/ref.hpp>
 #include <godot_cpp/variant/variant.hpp>
 #include <ryml.hpp>
+#include "../error_handling.hpp"
 
 /**
  * @brief Macro to define YAML tag information for a YAML Variant Converter class.
@@ -158,10 +159,10 @@ protected:
 	 */
 	inline YAMLException create_exception(const String &message, const ryml::ConstNodeRef &node) const {
 		if (m_parser && !node.invalid()) {
-			try {
+			YAML_TRY {
 				ryml::Location loc = node.location(*m_parser);
 				return YAMLException(message, loc);
-			} catch (...) {
+			} YAML_CATCH_ANY {
 				// If location can't be determined, fall back to basic message
 			}
 		}
@@ -206,9 +207,10 @@ protected:
 	 *
 	 * @param node The YAML node to check
 	 * @param required_fields List of required field names
+	 * @return bool True if all required fields are present
 	 * @throws YAMLException If any required field is missing
 	 */
-	inline void check_required_fields(const ryml::ConstNodeRef &node, const std::vector<const char *> &required_fields) const {
+	inline bool check_required_fields(const ryml::ConstNodeRef &node, const std::vector<const char *> &required_fields) const {
 		std::vector<String> missing_fields;
 
 		for (const char *field : required_fields) {
@@ -226,8 +228,10 @@ protected:
 				}
 			}
 
-			throw create_exception(String(get_tag()) + " missing required field" + (missing_fields.size() > 1 ? "s: " : ": ") + ": '" + missing_list + "'", node);
+			YAML_THROW(create_exception(String(get_tag()) + " missing required field" + (missing_fields.size() > 1 ? "s: " : ": ") + ": '" + missing_list + "'", node));
 		}
+
+		return true;
 	}
 
 	/**

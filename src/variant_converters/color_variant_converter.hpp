@@ -109,9 +109,10 @@ private:
 	 * @param b Blue component
 	 * @param a Alpha component
 	 * @param node The source YAML node (for error context)
+	 * @return bool True if all components are valid
 	 * @throws YAMLException If any component is negative
 	 */
-	void check_negative(real_t r, real_t g, real_t b, real_t a, const ryml::ConstNodeRef &node) const;
+	bool check_negative(real_t r, real_t g, real_t b, real_t a, const ryml::ConstNodeRef &node) const;
 };
 
 } // namespace godot
