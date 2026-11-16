@@ -75,7 +75,7 @@ public:
 
 		// Create temporary CharString from the data
 		CharString temp;
-		temp.resize(len + 1);
+		temp.resize_uninitialized(len + 1);
 		memcpy(temp.ptrw(), cstr, len);
 		temp[len] = '\0';
 
@@ -106,8 +106,7 @@ private:
 		 * @return int64_t The hash value
 		 */
 		int64_t operator()(const CharString &str) const {
-			// Reuse String's hash function for CharString's content
-			return String(str).hash();
+			return String(str.get_data()).hash();
 		}
 	};
 

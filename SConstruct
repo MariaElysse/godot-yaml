@@ -10,6 +10,16 @@ if not os.path.exists(cache_dir):
     os.makedirs(cache_dir, exist_ok=True)
 os.environ['SCONS_CACHE'] = cache_dir
 
+# godot-cpp 10.x requires an explicit API version. Default to the engine version this
+# addon targets so a bare `scons platform=... target=...` keeps working.
+if 'api_version' not in ARGUMENTS:
+    ARGUMENTS['api_version'] = '4.7'
+
+# The variant converters throw and catch C++ exceptions, so neither godot-cpp nor this
+# extension may be compiled with -fno-exceptions.
+if 'disable_exceptions' not in ARGUMENTS:
+    ARGUMENTS['disable_exceptions'] = 'no'
+
 base_env = SConscript('ext/godot-cpp/SConstruct')
 
 def get_library_name(env):
@@ -67,9 +77,6 @@ def setup_build_env(base_env):
 
     # ========== UNIX-LIKE ==========
     else:
-        if 'CXXFLAGS' in env and isinstance(env['CXXFLAGS'], list):
-            env['CXXFLAGS'] = [f for f in env['CXXFLAGS'] if f != '-fno-exceptions']
-
         if platform == 'web':
             # -fwasm-exceptions alone does not switch exceptions on, it only picks the
             # personality (the Wasm EH scheme Godot's own web templates are built with).

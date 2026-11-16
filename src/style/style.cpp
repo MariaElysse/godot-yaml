@@ -95,8 +95,6 @@ void YAMLStyle::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("get_debug_string"), &YAMLStyle::get_debug_string);
 
-	BIND_VIRTUAL_METHOD(YAMLStyle, _to_string);
-
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "container_form", PROPERTY_HINT_ENUM, "Any,Array,Dictionary"), "set_container_form", "get_container_form");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "flow_style", PROPERTY_HINT_ENUM, "Any,None,Single"), "set_flow_style", "get_flow_style");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "string_style", PROPERTY_HINT_ENUM, "Any,Plain,Single Quoted,Double Quoted,Literal,Folded"), "set_string_style", "get_string_style");

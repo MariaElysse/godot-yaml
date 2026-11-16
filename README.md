@@ -1,6 +1,6 @@
 # Godot YAML GDExtension
 
-This is the **C++ GDExtension implementation** of the Godot YAML plugin. It provides **high-performance YAML parsing and serialization** using [RapidYAML](https://github.com/biojppm/rapidyaml) as the core engine, offering **sub-millisecond processing** for most YAML documents. This extension is built for Godot 4.3 or later.
+This is the **C++ GDExtension implementation** of the Godot YAML plugin. It provides **high-performance YAML parsing and serialization** using [RapidYAML](https://github.com/biojppm/rapidyaml) as the core engine, offering **sub-millisecond processing** for most YAML documents. This extension is built for Godot 4.7 or later.
 
 ## Version History
 
@@ -63,10 +63,10 @@ Alternatively you can build the binaries yourself. For the [latest versions of m
   - **Linux/macOS**: GCC 9+ or Clang 10+
 - **SCons** build system (`pip install scons`)
 - **Android**: JDK version 20, NDK version 23.2.8568313, and Ninja
-- **Web**: Emscripten SDK, version **3.1.64** (the release the official Godot 4.3 web templates are built with), activated so that `emcc`, `em++` and `emcmake` are on `PATH`:
+- **Web**: Emscripten SDK, version **4.0.11** (the release the official Godot 4.7 web templates are built with), activated so that `emcc`, `em++` and `emcmake` are on `PATH`:
   ```bash
   git clone https://github.com/emscripten-core/emsdk.git
-  cd emsdk && ./emsdk install 3.1.64 && ./emsdk activate 3.1.64
+  cd emsdk && ./emsdk install 4.0.11 && ./emsdk activate 4.0.11
   source ./emsdk_env.sh
   ```
 
@@ -99,6 +99,7 @@ scons platform=web target=template_release
 - `platform`: Target (`windows`, `linux`, `macos`, `android`, `web`, etc.)
 - `target`: Build type (`template_debug`, `template_release`)
 - `arch`: CPU architecture (`x86_32`, `x86_64`, `arm64`, `wasm32`, etc.)
+- `api_version`: Godot API version to build against (defaults to `4.7`)
 - `threads`: Pthread support (`yes`/`no`) — matters for `web`, where the module has to match the engine template it is loaded into
 - `dev_build`: Enable extra debugging (`yes`/`no`)
 - `use_llvm`: Use Clang/LLVM compiler (`yes`/`no`)

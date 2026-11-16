@@ -180,10 +180,11 @@ jobs:
         if: matrix.platform == 'web'
         uses: mymindstorm/setup-emsdk@v14
         with:
-          # The emscripten version the official Godot 4.3 web templates are built with.
+          # The emscripten version the official Godot 4.7 web templates are built with
+          # (see EM_VERSION in godotengine/godot's .github/workflows/web_builds.yml).
           # A side module must be produced by the same toolchain generation as the engine
           # that dlopen()s it, so don't drift this without bumping godot-cpp too.
-          version: 3.1.64
+          version: 4.0.11
           no-cache: true
 
       - name: Verify Emscripten setup
@@ -195,7 +196,7 @@ jobs:
       - name: Compile GDExtension
         shell: bash
         run: |
-          scons platform=${{ matrix.platform }} target=${{ matrix.target }} arch=${{ matrix.arch }} -j$(nproc || sysctl -n hw.ncpu || echo 2)
+          scons platform=${{ matrix.platform }} target=${{ matrix.target }} arch=${{ matrix.arch }} api_version=4.7 -j$(nproc || sysctl -n hw.ncpu || echo 2)
 
       - name: Upload artifact
         uses: actions/upload-artifact@v6

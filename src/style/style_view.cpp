@@ -1,4 +1,5 @@
 #include "style_view.hpp"
+#include "../util/ryml_flags.hpp"
 #include "../util/util_string.hpp"
 
 #include <godot_cpp/core/class_db.hpp>
@@ -120,7 +121,7 @@ void YAMLStyle::View::apply_flow_style(ryml::NodeRef &node) const {
 	}
 
 	if (data->flow_style == YAMLStyle::FLOW_SINGLE) {
-		node |= ryml::FLOW_SL;
+		add_node_flags(node, ryml::FLOW_SL);
 	}
 }
 
@@ -131,16 +132,16 @@ void YAMLStyle::View::apply_string_style(ryml::NodeRef &node) const {
 
 	switch (data->string_style) {
 		case YAMLStyle::STRING_QUOTE_SINGLE:
-			node |= ryml::VAL_SQUO;
+			add_node_flags(node, ryml::VAL_SQUO);
 			break;
 		case YAMLStyle::STRING_QUOTE_DOUBLE:
-			node |= ryml::VAL_DQUO;
+			add_node_flags(node, ryml::VAL_DQUO);
 			break;
 		case YAMLStyle::STRING_LITERAL:
-			node |= ryml::VAL_LITERAL | ryml::BLOCK;
+			add_node_flags(node, ryml::VAL_LITERAL | ryml::BLOCK);
 			break;
 		case YAMLStyle::STRING_FOLDED:
-			node |= ryml::VAL_FOLDED | ryml::BLOCK;
+			add_node_flags(node, ryml::VAL_FOLDED | ryml::BLOCK);
 			break;
 		default:
 			break;

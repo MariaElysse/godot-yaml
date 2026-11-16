@@ -1,12 +1,13 @@
 #include "packed_int32_array_variant_converter.hpp"
 #include "../exception.hpp"
+#include "../util/ryml_flags.hpp"
 #include "../util/util_numeric.hpp"
 
 using namespace godot;
 
 void YAMLPackedInt32ArrayVariantConverter::encode(ryml::NodeRef &node, const Variant &v, const YAMLStyle::View &style) const {
 	const PackedInt32Array array = v.operator PackedInt32Array();
-	node |= ryml::SEQ;
+	add_node_flags(node, ryml::SEQ);
 
 	if (array.size() == 0) {
 		return; // Empty array
@@ -35,7 +36,7 @@ void YAMLPackedInt32ArrayVariantConverter::encode(ryml::NodeRef &node, const Var
 			item_style = template_style;
 		}
 
-		value_node << int_to_string(array[i], item_style.get_integer_format());
+		value_node.save(int_to_string(array[i], item_style.get_integer_format()));
 	}
 }
 

@@ -1,5 +1,6 @@
 #include "emitter.hpp"
 #include "../class_registry.hpp"
+#include "../util/ryml_flags.hpp"
 #include "../util/util_numeric.hpp"
 #include "../util/util_string.hpp"
 
@@ -12,7 +13,9 @@
 using namespace godot;
 
 YAML::Emitter::Emitter() {
-	callbacks.m_error = error_callback;
+	callbacks.m_error_basic = basic_error_callback;
+	callbacks.m_error_parse = error_callback;
+	callbacks.m_error_visit = visit_error_callback;
 	callbacks.m_user_data = this;
 	evt_handler = std::make_unique<ryml::EventHandlerTree>(callbacks);
 
@@ -29,8 +32,20 @@ void YAML::Emitter::init_converters() {
 	}
 }
 
-void YAML::Emitter::error_callback(const char *msg, size_t len, ryml::Location loc, void *user_data) {
-	ryml::csubstr error_msg(msg, len);
+void YAML::Emitter::error_callback(ryml::csubstr msg, const ryml::ErrorDataParse &errdata, void *user_data) {
+	handle_error(msg, errdata.ymlloc, user_data);
+}
+
+void YAML::Emitter::basic_error_callback(ryml::csubstr msg, const ryml::ErrorDataBasic &errdata, void *user_data) {
+	handle_error(msg, errdata.location, user_data);
+}
+
+void YAML::Emitter::visit_error_callback(ryml::csubstr msg, const ryml::ErrorDataVisit &errdata, void *user_data) {
+	handle_error(msg, errdata.cpploc, user_data);
+}
+
+void YAML::Emitter::handle_error(ryml::csubstr msg, const ryml::Location &loc, void *user_data) {
+	ryml::csubstr error_msg = msg;
 
 	// Strip "ERROR: " prefix if present
 	const ryml::csubstr strip_error_prefix = "ERROR: ";
@@ -166,22 +181,22 @@ void YAML::Emitter::emit_value(ryml::NodeRef node, const Variant &value, const Y
 
 void YAML::Emitter::emit_nil(ryml::NodeRef &node) {
 	ryml::csubstr null = {};
-	node << null;
+	node.save(null);
 }
 
 void YAML::Emitter::emit_bool(ryml::NodeRef &node, bool value) {
-	node << (value ? "true" : "false");
+	node.save((value ? "true" : "false"));
 }
 
 void YAML::Emitter::emit_number(ryml::NodeRef &node, const Variant &value, const YAMLStyle::View &style) {
 	if (value.get_type() == Variant::INT) {
 		YAMLStyle::IntegerFormat format = style.get_integer_format();
 		int64_t int_val = value.operator int64_t();
-		node << int_to_string(int_val, format);
+		node.save(int_to_string(int_val, format));
 	} else {
 		YAMLStyle::FloatFormat format = style.get_float_format();
 		double float_val = value.operator double();
-		node << float_to_string(float_val, format);
+		node.save(float_to_string(float_val, format));
 	}
 }
 
@@ -193,17 +208,17 @@ void YAML::Emitter::emit_string(ryml::NodeRef &node, const String &value, const 
 		if (string_style == YAMLStyle::STRING_PLAIN || string_style == YAMLStyle::STRING_ANY) {
 			if (needs_block_style(value)) {
 				// Must use block style
-				node |= ryml::BLOCK;
+				add_node_flags(node, ryml::BLOCK);
 				if (value.ends_with("\n") || value.contains("  ")) {
-					node |= ryml::VAL_LITERAL;
+					add_node_flags(node, ryml::VAL_LITERAL);
 				} else {
-					node |= ryml::VAL_FOLDED;
+					add_node_flags(node, ryml::VAL_FOLDED);
 				}
 			} else if (needs_quotes(value)) {
 				if (string_style == YAMLStyle::STRING_QUOTE_SINGLE) {
-					node |= ryml::VAL_SQUO;
+					add_node_flags(node, ryml::VAL_SQUO);
 				} else {
-					node |= ryml::VAL_DQUO;
+					add_node_flags(node, ryml::VAL_DQUO);
 				}
 			} else {
 				// Safe to use plain style
@@ -216,24 +231,24 @@ void YAML::Emitter::emit_string(ryml::NodeRef &node, const String &value, const 
 	} else {
 		// No style specified, auto-detect
 		if (needs_block_style(value)) {
-			node |= ryml::BLOCK;
+			add_node_flags(node, ryml::BLOCK);
 			if (value.ends_with("\n") || value.contains("  ")) {
-				node |= ryml::VAL_LITERAL;
+				add_node_flags(node, ryml::VAL_LITERAL);
 			} else {
-				node |= ryml::VAL_FOLDED;
+				add_node_flags(node, ryml::VAL_FOLDED);
 			}
 		} else if (needs_quotes(value)) {
 			// Must quote, default to double quotes
-			node |= ryml::VAL_DQUO;
+			add_node_flags(node, ryml::VAL_DQUO);
 		}
 	}
 
 	const CharString utf8 = value.utf8();
-	node << c4::csubstr(utf8.get_data(), utf8.length());
+	node.save(c4::csubstr(utf8.get_data(), utf8.length()));
 }
 
 void YAML::Emitter::emit_array(ryml::NodeRef &node, const Array &array, const YAMLStyle::View &style) {
-	node |= ryml::SEQ;
+	add_node_flags(node, ryml::SEQ);
 
 	style.apply_flow_style(node);
 
@@ -261,7 +276,7 @@ void YAML::Emitter::emit_array(ryml::NodeRef &node, const Array &array, const YA
 }
 
 void YAML::Emitter::emit_dictionary(ryml::NodeRef &node, const Dictionary &dict, const YAMLStyle::View &style) {
-	node |= ryml::MAP;
+	add_node_flags(node, ryml::MAP);
 
 	style.apply_flow_style(node);
 
@@ -270,7 +285,7 @@ void YAML::Emitter::emit_dictionary(ryml::NodeRef &node, const Dictionary &dict,
 	for (int64_t i = 0; i < keys.size(); i++) {
 		ryml::NodeRef child = node.append_child();
 		ryml::csubstr key_str = store_string(keys[i]);
-		child << ryml::key(key_str);
+		child.save_key(key_str);
 
 		YAMLStyle::View child_style = style.is_valid() ? style.get_child(String(keys[i])) : YAMLStyle::View();
 		emit_value(child, dict[keys[i]], child_style);

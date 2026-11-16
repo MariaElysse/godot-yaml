@@ -14,6 +14,7 @@
 #include <validation_error.hpp>
 #include <validation_result.hpp>
 
+#include <godot_cpp/classes/ref.hpp>
 #include <ryml.hpp>
 
 #include <memory>

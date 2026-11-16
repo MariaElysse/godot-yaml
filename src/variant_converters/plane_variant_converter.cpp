@@ -1,5 +1,6 @@
 #include "plane_variant_converter.hpp"
 #include "../exception.hpp"
+#include "../util/ryml_flags.hpp"
 #include "../util/util_numeric.hpp"
 #include "variant_converter_factory.hpp"
 
@@ -19,17 +20,17 @@ void YAMLPlaneVariantConverter::encode(ryml::NodeRef &node, const Variant &v, co
 	ryml::NodeRef d_node;
 
 	if (!style.is_valid() || style.get_container_form() != YAMLStyle::FORM_ARRAY) {
-		node |= ryml::MAP;
+		add_node_flags(node, ryml::MAP);
 		normal_node = node["normal"];
 		d_node = node["d"];
 	} else {
-		node |= ryml::SEQ;
+		add_node_flags(node, ryml::SEQ);
 		normal_node = node.append_child();
 		d_node = node.append_child();
 	}
 
 	vec3_converter->encode(normal_node, plane.normal, style.has_child("normal") ? style.get_child("normal") : style.get_scalar_view());
-	d_node << float_to_string(plane.d, style.has_child("d") ? style.get_child("d").get_float_format() : YAMLStyle::FLOAT_ANY);
+	d_node.save(float_to_string(plane.d, style.has_child("d") ? style.get_child("d").get_float_format() : YAMLStyle::FLOAT_ANY));
 }
 
 Variant YAMLPlaneVariantConverter::decode(const ryml::ConstNodeRef &node, YAMLParserContext *context) const {

@@ -1,5 +1,6 @@
 #include "transform2d_variant_converter.hpp"
 #include "../exception.hpp"
+#include "../util/ryml_flags.hpp"
 #include "variant_converter_factory.hpp"
 
 using namespace godot;
@@ -19,12 +20,12 @@ void YAMLTransform2DVariantConverter::encode(ryml::NodeRef &node, const Variant 
 	ryml::NodeRef origin_node;
 
 	if (!style.is_valid() || style.get_container_form() != YAMLStyle::FORM_ARRAY) {
-		node |= ryml::MAP;
+		add_node_flags(node, ryml::MAP);
 		x_node = node["x"];
 		y_node = node["y"];
 		origin_node = node["origin"];
 	} else {
-		node |= ryml::SEQ;
+		add_node_flags(node, ryml::SEQ);
 		x_node = node.append_child();
 		y_node = node.append_child();
 		origin_node = node.append_child();

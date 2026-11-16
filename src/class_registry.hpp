@@ -12,6 +12,7 @@
 #include <hashers.hpp>
 
 #include <godot_cpp/classes/mutex.hpp>
+#include <godot_cpp/classes/ref.hpp>
 #include <godot_cpp/classes/script.hpp>
 #include <godot_cpp/variant/string.hpp>
 
@@ -129,7 +130,7 @@ private:
 	/**
 	 * @brief Private constructor for singleton pattern.
 	 */
-	YAMLClassRegistry() { registry_mutex = Ref<Mutex>(memnew(Mutex)); }
+	YAMLClassRegistry() { registry_mutex = Ref<CoreBind::Mutex>(memnew(CoreBind::Mutex)); }
 
 	/**
 	 * @brief Private destructor for singleton pattern.
@@ -150,7 +151,7 @@ private:
 	/**
 	 * @brief Mutex for thread-safe registry access.
 	 */
-	Ref<Mutex> registry_mutex;
+	Ref<CoreBind::Mutex> registry_mutex;
 
 	/**
 	 * @brief Map of class names to registration information.

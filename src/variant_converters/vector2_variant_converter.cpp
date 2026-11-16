@@ -1,5 +1,6 @@
 #include "vector2_variant_converter.hpp"
 #include "../exception.hpp"
+#include "../util/ryml_flags.hpp"
 #include "../util/util_numeric.hpp"
 
 using namespace godot;
@@ -10,24 +11,24 @@ void YAMLVector2VariantConverter::encode(ryml::NodeRef &node, const Variant &v, 
 	if (style.is_valid()) {
 		style.apply_flow_style(node);
 	} else {
-		node |= ryml::FLOW_SL;
+		add_node_flags(node, ryml::FLOW_SL);
 	}
 
 	ryml::NodeRef x_node;
 	ryml::NodeRef y_node;
 
 	if (!style.is_valid() || style.get_container_form() != YAMLStyle::FORM_ARRAY) {
-		node |= ryml::MAP;
+		add_node_flags(node, ryml::MAP);
 		x_node = node["x"];
 		y_node = node["y"];
 	} else {
-		node |= ryml::SEQ;
+		add_node_flags(node, ryml::SEQ);
 		x_node = node.append_child();
 		y_node = node.append_child();
 	}
 
-	x_node << float_to_string(vec.x, style.has_child("x") ? style.get_child("x").get_float_format() : style.get_float_format());
-	y_node << float_to_string(vec.y, style.has_child("y") ? style.get_child("y").get_float_format() : style.get_float_format());
+	x_node.save(float_to_string(vec.x, style.has_child("x") ? style.get_child("x").get_float_format() : style.get_float_format()));
+	y_node.save(float_to_string(vec.y, style.has_child("y") ? style.get_child("y").get_float_format() : style.get_float_format()));
 }
 
 Variant YAMLVector2VariantConverter::decode(const ryml::ConstNodeRef &node, YAMLParserContext *context) const {

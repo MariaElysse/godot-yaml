@@ -1,5 +1,6 @@
 #include "packed_vector2_array_variant_converter.hpp"
 #include "../exception.hpp"
+#include "../util/ryml_flags.hpp"
 #include "variant_converter_factory.hpp"
 
 using namespace godot;
@@ -11,7 +12,7 @@ YAMLPackedVector2ArrayVariantConverter::YAMLPackedVector2ArrayVariantConverter(Y
 
 void YAMLPackedVector2ArrayVariantConverter::encode(ryml::NodeRef &node, const Variant &v, const YAMLStyle::View &style) const {
 	const PackedVector2Array array = v.operator PackedVector2Array();
-	node |= ryml::SEQ;
+	add_node_flags(node, ryml::SEQ);
 
 	if (array.size() == 0) {
 		return; // Empty array

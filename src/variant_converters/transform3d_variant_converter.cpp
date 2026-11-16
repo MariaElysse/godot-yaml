@@ -1,5 +1,6 @@
 #include "transform3d_variant_converter.hpp"
 #include "../exception.hpp"
+#include "../util/ryml_flags.hpp"
 #include "variant_converter_factory.hpp"
 
 using namespace godot;
@@ -20,11 +21,11 @@ void YAMLTransform3DVariantConverter::encode(ryml::NodeRef &node, const Variant 
 	ryml::NodeRef origin_node;
 
 	if (!style.is_valid() || style.get_container_form() != YAMLStyle::FORM_ARRAY) {
-		node |= ryml::MAP;
+		add_node_flags(node, ryml::MAP);
 		basis_node = node["basis"];
 		origin_node = node["origin"];
 	} else {
-		node |= ryml::SEQ;
+		add_node_flags(node, ryml::SEQ);
 		basis_node = node.append_child();
 		origin_node = node.append_child();
 	}

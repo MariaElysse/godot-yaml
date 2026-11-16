@@ -1,5 +1,6 @@
 #include "packed_byte_array_variant_converter.hpp"
 #include "../exception.hpp"
+#include "../util/ryml_flags.hpp"
 #include "../util/util_string.hpp"
 
 #include <godot_cpp/classes/marshalls.hpp>
@@ -12,15 +13,15 @@ void YAMLPackedByteArrayVariantConverter::encode(ryml::NodeRef &node, const Vari
 
 	if (array.size() == 0) {
 		ryml::csubstr null = {};
-		node << null;
+		node.save(null);
 		return;
 	}
 
 	// Always use literal block
-	node |= ryml::VAL_LITERAL | ryml::BLOCK;
+	add_node_flags(node, ryml::VAL_LITERAL | ryml::BLOCK);
 
 	String base64 = Marshalls::get_singleton()->raw_to_base64(array);
-	node << format_output(base64, BASE64_LINE_LENGTH);
+	node.save(format_output(base64, BASE64_LINE_LENGTH));
 }
 
 Variant YAMLPackedByteArrayVariantConverter::decode(const ryml::ConstNodeRef &node, YAMLParserContext *context) const {

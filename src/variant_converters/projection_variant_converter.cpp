@@ -1,5 +1,6 @@
 #include "projection_variant_converter.hpp"
 #include "../exception.hpp"
+#include "../util/ryml_flags.hpp"
 #include "../util/util_numeric.hpp"
 #include "variant_converter_factory.hpp"
 
@@ -21,13 +22,13 @@ void YAMLProjectionVariantConverter::encode(ryml::NodeRef &node, const Variant &
 	ryml::NodeRef w_node;
 
 	if (!style.is_valid() || style.get_container_form() != YAMLStyle::FORM_ARRAY) {
-		node |= ryml::MAP;
+		add_node_flags(node, ryml::MAP);
 		x_node = node["x"];
 		y_node = node["y"];
 		z_node = node["z"];
 		w_node = node["w"];
 	} else {
-		node |= ryml::SEQ;
+		add_node_flags(node, ryml::SEQ);
 		x_node = node.append_child();
 		y_node = node.append_child();
 		z_node = node.append_child();

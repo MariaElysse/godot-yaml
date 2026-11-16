@@ -7,7 +7,7 @@
 using namespace godot;
 
 YAML::SyntaxValidator::SyntaxValidator() {
-	callbacks.m_error = error_callback;
+	callbacks.m_error_parse = error_callback;
 	callbacks.m_user_data = this;
 	evt_handler = std::make_unique<ryml::EventHandlerTree>(callbacks);
 	ryml_parser = std::make_unique<ryml::Parser>(evt_handler.get(), ryml::ParserOptions().locations(true));
@@ -33,8 +33,9 @@ Ref<YAMLResult> YAML::SyntaxValidator::validate(const String &input) {
 	}
 }
 
-void YAML::SyntaxValidator::error_callback(const char *msg, size_t len, ryml::Location loc, void *user_data) {
-	ryml::csubstr error_msg(msg, len);
+void YAML::SyntaxValidator::error_callback(ryml::csubstr msg, const ryml::ErrorDataParse &errdata, void *user_data) {
+	ryml::csubstr error_msg = msg;
+	const ryml::Location &loc = errdata.ymlloc;
 
 	// Strip "ERROR: " prefix if present
 	const ryml::csubstr strip_error_prefix = "ERROR: ";

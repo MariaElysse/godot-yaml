@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Added Web (wasm32) builds: `scons platform=web target=template_release` now produces a `.wasm` side module, and prebuilt debug and release web binaries are shipped in the release archives
+- **BREAKING**: Requires Godot 4.7 or later. The extension is now built against the Godot 4.7 GDExtension API (`compatibility_minimum = "4.7"`), with godot-cpp 10.0.0 and RapidYAML 0.16.0
 
 ## Version 2.2.0
 

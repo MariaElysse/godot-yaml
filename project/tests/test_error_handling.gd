@@ -9,7 +9,7 @@ key: value
   indentation: wrong
 """
 	var result := YAML.parse(invalid_yaml)
-	expect_equal(result.get_error(), "parse error (line 3, column 14)", "Expected parse error")
+	expect_equal(result.get_error(), "multiline scalars cannot be used as keys (line 3, column 14)", "Expected parse error")
 
 func test_unmatched_quotes():
 	var unmatched_quotes := """
@@ -17,7 +17,7 @@ message: "This quote is not closed
 next_line: value
 """
 	var result = YAML.parse(unmatched_quotes)
-	expect_equal(result.get_error(), "reached end of file looking for closing quote (line 4, column 1)", "Expected EOF")
+	expect_equal(result.get_error(), "bad indentation (line 3, column 1)", "Expected parse error")
 
 func test_circular_reference():
 	var dict1 = {}

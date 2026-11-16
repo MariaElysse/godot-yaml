@@ -1,5 +1,6 @@
 #include "aabb_variant_converter.hpp"
 #include "../exception.hpp"
+#include "../util/ryml_flags.hpp"
 #include "variant_converter_factory.hpp"
 
 #include <godot_cpp/variant/utility_functions.hpp>
@@ -20,11 +21,11 @@ void YAMLAABBVariantConverter::encode(ryml::NodeRef &node, const Variant &v, con
 	ryml::NodeRef size_node;
 
 	if (!style.is_valid() || style.get_container_form() != YAMLStyle::FORM_ARRAY) {
-		node |= ryml::MAP;
+		add_node_flags(node, ryml::MAP);
 		position_node = node["position"];
 		size_node = node["size"];
 	} else {
-		node |= ryml::SEQ;
+		add_node_flags(node, ryml::SEQ);
 		position_node = node.append_child();
 		size_node = node.append_child();
 	}

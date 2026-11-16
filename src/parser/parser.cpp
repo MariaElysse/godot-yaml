@@ -12,7 +12,7 @@
 using namespace godot;
 
 YAML::Parser::Parser(std::unordered_set<String, StringHasher, StringEqual> *shared_paths) {
-	callbacks.m_error = error_callback;
+	callbacks.m_error_parse = error_callback;
 	callbacks.m_user_data = this;
 	evt_handler = std::make_unique<ryml::EventHandlerTree>(callbacks);
 	ryml_parser = std::make_unique<ryml::Parser>(evt_handler.get(), ryml::ParserOptions().locations(true));
@@ -44,8 +44,9 @@ void YAML::Parser::init_converters() {
 	}
 }
 
-void YAML::Parser::error_callback(const char *msg, size_t len, ryml::Location loc, void *user_data) {
-	ryml::csubstr error_msg(msg, len);
+void YAML::Parser::error_callback(ryml::csubstr msg, const ryml::ErrorDataParse &errdata, void *user_data) {
+	ryml::csubstr error_msg = msg;
+	const ryml::Location &loc = errdata.ymlloc;
 
 	// Strip "ERROR: " prefix if available
 	const ryml::csubstr strip_error_prefix = "ERROR: ";
@@ -429,21 +430,21 @@ std::optional<Variant> YAML::Parser::try_parse_special_value(const String &str_v
 		if (detect_style) {
 			context->current_style()->set_float_format(YAMLStyle::FloatFormat::FLOAT_ANY);
 		}
-		return Math_INF;
+		return Math::INF;
 	}
 
 	if (str_val == "-.inf") {
 		if (detect_style) {
 			context->current_style()->set_float_format(YAMLStyle::FloatFormat::FLOAT_ANY);
 		}
-		return -Math_INF;
+		return -Math::INF;
 	}
 
 	if (str_val == ".nan") {
 		if (detect_style) {
 			context->current_style()->set_float_format(YAMLStyle::FloatFormat::FLOAT_ANY);
 		}
-		return Math_NAN;
+		return Math::NaN;
 	}
 
 	return std::nullopt;

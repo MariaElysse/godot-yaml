@@ -35,7 +35,6 @@ void YAMLSecurity::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("clear_path_restrictions"), &YAMLSecurity::clear_path_restrictions);
 	ClassDB::bind_method(D_METHOD("clear_type_restrictions"), &YAMLSecurity::clear_type_restrictions);
 	ClassDB::bind_method(D_METHOD("reset"), &YAMLSecurity::reset);
-	BIND_VIRTUAL_METHOD(YAMLSecurity, _to_string);
 }
 
 void YAMLSecurity::allow_path(const String &path_prefix, const Array &type_names) {

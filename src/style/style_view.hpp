@@ -11,6 +11,7 @@
 #include "style.hpp"
 #include <hashers.hpp>
 
+#include <godot_cpp/classes/ref.hpp>
 #include <godot_cpp/variant/dictionary.hpp>
 #include <ryml.hpp>
 

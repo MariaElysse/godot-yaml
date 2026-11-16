@@ -1,11 +1,12 @@
 #include "packed_string_array_variant_converter.hpp"
 #include "../exception.hpp"
+#include "../util/ryml_flags.hpp"
 
 using namespace godot;
 
 void YAMLPackedStringArrayVariantConverter::encode(ryml::NodeRef &node, const Variant &v, const YAMLStyle::View &style) const {
 	const PackedStringArray array = v.operator PackedStringArray();
-	node |= ryml::SEQ;
+	add_node_flags(node, ryml::SEQ);
 
 	if (array.size() == 0) {
 		return; // Empty sequence
@@ -21,7 +22,7 @@ void YAMLPackedStringArrayVariantConverter::encode(ryml::NodeRef &node, const Va
 		ryml::NodeRef child = node.append_child();
 
 		if (str.is_empty()) {
-			child << ryml::csubstr{};
+			child.save(ryml::csubstr{});
 			continue;
 		}
 
@@ -43,11 +44,11 @@ void YAMLPackedStringArrayVariantConverter::encode(ryml::NodeRef &node, const Va
 		if (item_style.is_valid()) {
 			item_style.apply_string_style(child);
 		} else {
-			child |= ryml::VAL_DQUO;
+			add_node_flags(child, ryml::VAL_DQUO);
 		}
 
 		const CharString utf8 = str.utf8();
-		child << c4::csubstr(utf8.get_data(), utf8.length());
+		child.save(c4::csubstr(utf8.get_data(), utf8.length()));
 	}
 }
 

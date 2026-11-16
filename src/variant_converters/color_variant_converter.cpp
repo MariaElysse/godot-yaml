@@ -1,5 +1,6 @@
 #include "color_variant_converter.hpp"
 #include "../exception.hpp"
+#include "../util/ryml_flags.hpp"
 #include "../util/util_numeric.hpp"
 
 using namespace godot;
@@ -14,7 +15,7 @@ void YAMLColorVariantConverter::encode(ryml::NodeRef &node, const Variant &v, co
 		ryml::NodeRef a_node;
 
 		if (style.get_container_form() == YAMLStyle::FORM_DICTIONARY) {
-			node |= ryml::MAP;
+			add_node_flags(node, ryml::MAP);
 			r_node = node["r"];
 			g_node = node["g"];
 			b_node = node["b"];
@@ -22,7 +23,7 @@ void YAMLColorVariantConverter::encode(ryml::NodeRef &node, const Variant &v, co
 				a_node = node["a"];
 			}
 		} else {
-			node |= ryml::SEQ;
+			add_node_flags(node, ryml::SEQ);
 			r_node = node.append_child();
 			g_node = node.append_child();
 			b_node = node.append_child();
@@ -31,14 +32,14 @@ void YAMLColorVariantConverter::encode(ryml::NodeRef &node, const Variant &v, co
 			}
 		}
 
-		r_node << float_to_string(color.r, style.has_child("r") ? style.get_child("r").get_float_format() : style.get_float_format());
-		g_node << float_to_string(color.g, style.has_child("g") ? style.get_child("g").get_float_format() : style.get_float_format());
-		b_node << float_to_string(color.b, style.has_child("b") ? style.get_child("b").get_float_format() : style.get_float_format());
+		r_node.save(float_to_string(color.r, style.has_child("r") ? style.get_child("r").get_float_format() : style.get_float_format()));
+		g_node.save(float_to_string(color.g, style.has_child("g") ? style.get_child("g").get_float_format() : style.get_float_format()));
+		b_node.save(float_to_string(color.b, style.has_child("b") ? style.get_child("b").get_float_format() : style.get_float_format()));
 		if (color.a < 1.0f) {
-			a_node << float_to_string(color.a, style.has_child("a") ? style.get_child("a").get_float_format() : style.get_float_format());
+			a_node.save(float_to_string(color.a, style.has_child("a") ? style.get_child("a").get_float_format() : style.get_float_format()));
 		}
 	} else {
-		node << store_string(color.to_html(color.a < 1.0f));
+		node.save(store_string(color.to_html(color.a < 1.0f)));
 	}
 }
 

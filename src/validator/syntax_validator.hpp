@@ -12,6 +12,7 @@
 #include "../result.hpp"
 #include "../yaml.hpp"
 
+#include <godot_cpp/classes/ref.hpp>
 #include <ryml.hpp>
 
 #include <csetjmp>
@@ -80,11 +81,10 @@ private:
 	 * @brief Callback for error handling during validation.
 	 *
 	 * @param msg Error message
-	 * @param len Length of error message
-	 * @param loc Location in the source document
+	 * @param errdata Error location data provided by rapidyaml
 	 * @param user_data User data pointer (typically the Validator instance)
 	 */
-	static void error_callback(const char *msg, size_t len, ryml::Location loc, void *user_data);
+	static void error_callback(ryml::csubstr msg, const ryml::ErrorDataParse &errdata, void *user_data);
 	std::jmp_buf jmp_env;
 };
 

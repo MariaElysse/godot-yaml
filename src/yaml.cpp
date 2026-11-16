@@ -56,8 +56,6 @@ void YAML::_bind_methods() {
 
 	ClassDB::bind_static_method("YAML", D_METHOD("load_schema_from_string", "yaml_string", "validate_against_meta"), &YAML::load_schema_from_string, DEFVAL(false));
 	ClassDB::bind_static_method("YAML", D_METHOD("load_schema_from_file", "path", "validate_against_meta"), &YAML::load_schema_from_file, DEFVAL(false));
-
-	BIND_VIRTUAL_METHOD(YAML, _to_string);
 }
 
 String YAML::version() {

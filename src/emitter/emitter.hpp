@@ -15,6 +15,7 @@
 #include "result.hpp"
 #include <hashers.hpp>
 
+#include <godot_cpp/classes/ref.hpp>
 #include <godot_cpp/classes/resource.hpp>
 #include <ryml.hpp>
 
@@ -99,11 +100,37 @@ private:
 	 * @brief Error callback for ryml.
 	 *
 	 * @param msg Error message
-	 * @param len Length of error message
+	 * @param errdata Error location data provided by rapidyaml
+	 * @param user_data User data pointer (typically the YAMLEmitter instance)
+	 */
+	static void error_callback(ryml::csubstr msg, const ryml::ErrorDataParse &errdata, void *user_data);
+
+	/**
+	 * @brief Callback for non-parse errors reported by rapidyaml.
+	 *
+	 * @param msg Error message
+	 * @param errdata Error data provided by rapidyaml
+	 * @param user_data User data pointer (typically the YAMLEmitter instance)
+	 */
+	static void basic_error_callback(ryml::csubstr msg, const ryml::ErrorDataBasic &errdata, void *user_data);
+
+	/**
+	 * @brief Callback for node visit errors reported by rapidyaml.
+	 *
+	 * @param msg Error message
+	 * @param errdata Error data provided by rapidyaml
+	 * @param user_data User data pointer (typically the YAMLEmitter instance)
+	 */
+	static void visit_error_callback(ryml::csubstr msg, const ryml::ErrorDataVisit &errdata, void *user_data);
+
+	/**
+	 * @brief Shared error handling for every rapidyaml callback flavour.
+	 *
+	 * @param msg Error message
 	 * @param loc Location in the document
 	 * @param user_data User data pointer (typically the YAMLEmitter instance)
 	 */
-	static void error_callback(const char *msg, size_t len, ryml::Location loc, void *user_data);
+	static void handle_error(ryml::csubstr msg, const ryml::Location &loc, void *user_data);
 
 	/**
 	 * @brief Initializes the type converters.

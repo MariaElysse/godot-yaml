@@ -28,8 +28,6 @@ void YAMLResult::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_validation_errors"), &YAMLResult::get_validation_errors);
 
 	ClassDB::bind_static_method("YAMLResult", D_METHOD("error", "msg"), &YAMLResult::user_error);
-
-	BIND_VIRTUAL_METHOD(YAMLResult, _to_string);
 }
 
 Ref<YAMLResult> YAMLResult::success(const Variant &data, const Ref<YAMLStyle> &style, const Ref<SchemaValidationResult> &validation) {
